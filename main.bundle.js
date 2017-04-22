@@ -85,18 +85,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 var FlareJsonService = (function () {
     function FlareJsonService(http, d3Service, url) {
-        var _this = this;
         this.http = http;
         this.url = url;
         this.d3 = d3Service.getD3();
-        this.root = this.http.get('./assets/' + this.url).map(function (res) {
+    }
+    FlareJsonService.prototype.getRoot = function () {
+        var _this = this;
+        return this.http.get('./assets/' + this.url).map(function (res) {
             var rawData = res['_body'] || '';
             var parsedJson = JSON.parse(rawData);
             return _this.d3.hierarchy(parsedJson)
                 .sum(function (d) { return d.size; })
                 .sort(function (a, b) { return b.value - a.value; });
         });
-    }
+    };
     return FlareJsonService;
 }());
 FlareJsonService = __decorate([
@@ -179,6 +181,8 @@ var AppComponent = (function () {
         this.flareCsvService = flareCsvService;
         this.flareJsonService = flareJsonService;
         this.flareCsvReduxService = flareCsvReduxService;
+        this.csvRoot = flareCsvService.getRoot();
+        this.jsonRoot = flareJsonService.getRoot();
     }
     return AppComponent;
 }());
@@ -469,7 +473,7 @@ var D3CirclePackingReduxComponent = (function () {
         var svgWidth = +d3Svg.attr('width');
         var svgHeight = +d3Svg.attr('height');
         var format = d3.format(",d");
-        var color = d3.scaleSequential(d3.interpolateMagma).domain([-4, 4]);
+        var color = d3.scaleSequential(d3.interpolateCubehelixDefault).domain([-4, 4]);
         var pack = d3.pack()
             .size([svgWidth - 2, svgHeight - 2])
             .padding(3);
@@ -582,7 +586,7 @@ var D3CirclePackingRendererComponent = (function () {
         var svgWidth = +d3Svg.attr('width');
         var svgHeight = +d3Svg.attr('height');
         var format = d3.format(",d");
-        var color = d3.scaleSequential(d3.interpolateMagma).domain([-4, 4]);
+        var color = d3.scaleSequential(d3.interpolateViridis).domain([-4, 4]);
         var pack = d3.pack()
             .size([svgWidth - 2, svgHeight - 2])
             .padding(3);
@@ -1033,7 +1037,7 @@ module.exports = module.exports.toString();
 /***/ 711:
 /***/ (function(module, exports) {
 
-module.exports = "<h1>A case study in combining Angular, Redux and D3 using SOLID design principles</h1>\n<p>\n  This Angular page shows four variations on the display of D3's circle packing visualization. The differences in\n  implementation are:\n</p>\n<ol>\n  <li>An all-in-one component which reads csv data, processed it and renders the visualization</li>\n  <li>A data service and a rendering component, using a csv data source</li>\n  <li>A data service and a rendering component, using a json data source</li>\n  <li>A data service and a rendering component with a common Redux data store used for communicating between the two</li>\n</ol>\n<div class=\"widget\">\n  <h2>All in one component</h2>\n  <d3-circle-packing-all-in-one url=\"flare.csv\"></d3-circle-packing-all-in-one>\n</div>\n<div class=\"widget\">\n  <h2>Service & component with CSV data source</h2>\n  <d3-circle-packing-renderer [root]=\"flareCsvService.root\"></d3-circle-packing-renderer>\n</div>\n<div class=\"widget\">\n  <h2>Service & component with JSON data source</h2>\n  <d3-circle-packing-renderer [root]=\"flareJsonService.root\"></d3-circle-packing-renderer>\n</div>\n<div class=\"widget\">\n  <h2>Redux</h2>\n  <d3-circle-packing-redux field=\"flareData\"></d3-circle-packing-redux>\n</div>\n"
+module.exports = "<h1>A case study in combining Angular, Redux and D3 using SOLID design principles</h1>\n<p>\n  This Angular page shows four variations on the display of D3's circle packing visualization. The differences in\n  implementation are:\n</p>\n<ol>\n  <li>An all-in-one component which reads csv data, processed it and renders the visualization</li>\n  <li>A data service and a rendering component, using a csv data source</li>\n  <li>A data service and a rendering component, using a json data source</li>\n  <li>A data service and a rendering component with a common Redux data store used for communicating between the two</li>\n</ol>\n<div class=\"widget\">\n  <h2>All in one component</h2>\n  <d3-circle-packing-all-in-one url=\"flare.csv\"></d3-circle-packing-all-in-one>\n</div>\n<div class=\"widget\">\n  <h2>Service & component with CSV data source</h2>\n  <d3-circle-packing-renderer [root]=\"csvRoot\"></d3-circle-packing-renderer>\n</div>\n<div class=\"widget\">\n  <h2>Service & component with JSON data source</h2>\n  <d3-circle-packing-renderer [root]=\"jsonRoot\"></d3-circle-packing-renderer>\n</div>\n<div class=\"widget\">\n  <h2>Redux</h2>\n  <d3-circle-packing-redux field=\"flareData\"></d3-circle-packing-redux>\n</div>\n"
 
 /***/ }),
 
@@ -1133,21 +1137,23 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 
 var FlareCsvService = (function () {
     function FlareCsvService(http, d3Service, url) {
-        var _this = this;
         this.http = http;
         this.url = url;
         this.d3 = d3Service.getD3();
         this.stratify = this.d3.stratify()
             .id(function (d) { return d.name; })
             .parentId(function (d) { return d.name.substring(0, d.name.lastIndexOf(".")); });
-        this.root = this.http.get('./assets/' + url).map(function (res) {
+    }
+    FlareCsvService.prototype.getRoot = function () {
+        var _this = this;
+        return this.http.get('./assets/' + this.url).map(function (res) {
             var rawData = res['_body'] || '';
             var data = _this.d3.csvParse(rawData);
             return _this.stratify(data)
                 .sum(function (d) { return d.value; })
                 .sort(function (a, b) { return b.value - a.value; });
         });
-    }
+    };
     return FlareCsvService;
 }());
 FlareCsvService = __decorate([
